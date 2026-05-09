@@ -84,17 +84,20 @@ button:hover{
 <div id="post-list"></div>
 
 
+  <script>
 
-
-<script>
-
-const API_URL = "https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
+const API_URL =
+"https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
 
 // =======================
-// CREATE POST
+// GLOBAL
 // =======================
 
 let editingPostId = null;
+
+// =======================
+// PUBLISH / UPDATE POST
+// =======================
 
 function publishPost(){
 
@@ -118,60 +121,66 @@ function publishPost(){
     return;
   }
 
+  // detect action
+  const actionType =
+    editingPostId
+    ? "updatePost"
+    : "addPost";
+
   fetch(API_URL, {
 
-  method:"POST",
+    method:"POST",
 
-  body:new URLSearchParams({
+    body:new URLSearchParams({
 
-    action: editingPostId
-      ? "updatePost"
-      : "addPost",
+      action: actionType,
 
-    postId: editingPostId,
+      postId: editingPostId || "",
 
-    password: password,
+      password: password,
 
-    title: title,
+      title: title,
 
-    content: content
+      content: content
+
+    })
 
   })
 
-})
-    
   .then(res => res.json())
 
   .then(data => {
 
+    console.log(data);
+
     if(data.status === "success"){
 
-      // CREATE
-      if(!editingPostId){
+      // add post
+      if(actionType === "addPost"){
 
-        document.getElementById("message").innerHTML =
-        `
-        ✅ Post Published<br><br>
+        document.getElementById("message").innerHTML = `
+          ✅ Post Published
+          <br><br>
 
-        <a href="post.html?id=${data.postId}"
-           target="_blank">
+          <a href="post.html?id=${data.postId}"
+             target="_blank">
 
-          Open Post
+             Open Post
 
-        </a>
+          </a>
         `;
 
       }
 
-      // UPDATE
+      // update post
       else{
 
         document.getElementById("message").innerHTML =
-        "✅ Post Updated";
+          "✅ Post Updated";
 
       }
 
-      // clear form
+      // reset form
       document.getElementById("title").value = "";
 
       CKEDITOR.instances.content.setData("");
@@ -189,9 +198,21 @@ function publishPost(){
 
     }
 
+  })
+
+  .catch(error => {
+
+    console.log(error);
+
+    alert("Error saving post");
+
   });
 
 }
+
+// =======================
+// LOAD POSTS
+// =======================
 
 function loadAdminPosts(){
 
@@ -231,35 +252,62 @@ function loadAdminPosts(){
 
     });
 
-    document.getElementById("post-list").innerHTML = html;
+    document.getElementById("post-list").innerHTML =
+      html;
 
   });
 
 }
 
+// =======================
+// EDIT POST
+// =======================
+
 function editPost(id){
 
-  fetch(API_URL + "?action=getPostById&postId=" + id)
+  fetch(
+    API_URL +
+    "?action=getPostById&postId=" + id
+  )
 
   .then(res => res.json())
 
   .then(post => {
 
-    editingPostId = id;
+    editingPostId = post.id;
 
-    document.getElementById("title").value = post.title;
+    document.getElementById("title").value =
+      post.title;
 
-    CKEDITOR.instances.content.setData(post.content);
+    CKEDITOR.instances.content.setData(
+      post.content
+    );
 
-    window.scrollTo(0,0);
+    document.getElementById("message").innerHTML =
+      "✏️ Editing Post";
+
+    window.scrollTo({
+      top:0,
+      behavior:"smooth"
+    });
 
   });
 
 }
+
+// =======================
+// DELETE POST
+// =======================
+
 function deletePost(id){
 
   const password =
     document.getElementById("password").value;
+
+  if(password.trim() === ""){
+    alert("Enter admin password");
+    return;
+  }
 
   if(!confirm("Delete this post?")){
     return;
@@ -293,9 +341,28 @@ function deletePost(id){
 
 }
 
+// =======================
+// CKEDITOR
+// =======================
 
+CKEDITOR.replace('content', {
+  height: 400
+});
+
+// =======================
+// AUTO LOAD POSTS
+// =======================
+
+window.onload = function(){
+
+  loadAdminPosts();
+
+};
 
 </script>
+
+
+
 <script>
 
 CKEDITOR.replace('content', {
