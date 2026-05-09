@@ -1,1 +1,507 @@
-Main.html
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Panel</title>
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<style>
+
+body{
+  font-family:Arial;
+  background:#f5f5f5;
+  margin:0;
+  padding:20px;
+}
+
+.topbar{
+  display:flex;
+  gap:10px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+
+input[type="password"]{
+  padding:10px;
+  width:220px;
+}
+
+button{
+  padding:10px 15px;
+  border:none;
+  cursor:pointer;
+  background:#007bff;
+  color:white;
+}
+
+button:hover{
+  opacity:0.9;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  background:white;
+}
+
+th,td{
+  border:1px solid #ddd;
+  padding:10px;
+  text-align:left;
+  vertical-align:top;
+}
+
+th{
+  background:#222;
+  color:white;
+}
+
+tr:nth-child(even){
+  background:#f9f9f9;
+}
+
+.preview{
+  max-width:300px;
+  word-break:break-word;
+}
+
+.modal{
+  position:fixed;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:999;
+}
+
+.modal-content{
+  background:white;
+  width:90%;
+  max-width:900px;
+  padding:20px;
+  border-radius:5px;
+  max-height:90vh;
+  overflow:auto;
+}
+
+.modal-content input{
+  width:100%;
+  padding:10px;
+  margin-bottom:15px;
+  box-sizing:border-box;
+}
+
+.modal-buttons{
+  margin-top:15px;
+  display:flex;
+  gap:10px;
+}
+
+#message{
+  margin-bottom:15px;
+  font-weight:bold;
+}
+
+@media(max-width:700px){
+
+  table{
+    font-size:14px;
+  }
+
+  th,td{
+    padding:6px;
+  }
+
+  .preview{
+    max-width:150px;
+  }
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+
+  <input
+    type="password"
+    id="password"
+    placeholder="Admin Password"
+  >
+
+  <button onclick="openAddModal()">
+    + Add Post
+  </button>
+
+</div>
+
+<div id="message"></div>
+
+<table>
+
+<thead>
+
+<tr>
+  <th>ID</th>
+  <th>Title</th>
+  <th>Preview</th>
+  <th>Date</th>
+  <th>Edit</th>
+  <th>Delete</th>
+</tr>
+
+</thead>
+
+<tbody id="post-list"></tbody>
+
+</table>
+
+<!-- MODAL -->
+
+<div id="postModal" class="modal">
+
+<div class="modal-content">
+
+<h2 id="modalTitle">
+Add Post
+</h2>
+
+<input
+  type="text"
+  id="title"
+  placeholder="Post Title"
+>
+
+<textarea id="content"></textarea>
+
+<div class="modal-buttons">
+
+<button onclick="savePost()">
+Save Post
+</button>
+
+<button onclick="closeModal()">
+Cancel
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
+
+let editingPostId = null;
+
+// =======================
+// LOAD POSTS
+// =======================
+
+function loadAdminPosts(){
+
+  fetch(API_URL + "?action=getPosts")
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    let html = "";
+
+    data.reverse().forEach(post => {
+
+      html += `
+
+      <tr>
+
+        <td>${post.id}</td>
+
+        <td>${post.title}</td>
+
+        <td class="preview">
+          ${stripHtml(post.content)
+            .substring(0,100)}...
+        </td>
+
+        <td>
+          ${formatDate(post.date)}
+        </td>
+
+        <td>
+
+          <button onclick="editPost('${post.id}')">
+            Edit
+          </button>
+
+        </td>
+
+        <td>
+
+          <button
+            style="background:red"
+            onclick="deletePost('${post.id}')"
+          >
+            Delete
+          </button>
+
+        </td>
+
+      </tr>
+
+      `;
+
+    });
+
+    document.getElementById("post-list")
+      .innerHTML = html;
+
+  });
+
+}
+
+// =======================
+// STRIP HTML
+// =======================
+
+function stripHtml(html){
+
+  const div =
+    document.createElement("div");
+
+  div.innerHTML = html;
+
+  return div.textContent || div.innerText || "";
+
+}
+
+// =======================
+// DATE FORMAT
+// =======================
+
+function formatDate(date){
+
+  return new Date(date)
+    .toLocaleString();
+
+}
+
+// =======================
+// OPEN ADD MODAL
+// =======================
+
+function openAddModal(){
+
+  editingPostId = null;
+
+  document.getElementById("modalTitle")
+    .innerText = "Add Post";
+
+  document.getElementById("title").value = "";
+
+  CKEDITOR.instances.content.setData("");
+
+  document.getElementById("postModal")
+    .style.display = "flex";
+
+}
+
+// =======================
+// CLOSE MODAL
+// =======================
+
+function closeModal(){
+
+  document.getElementById("postModal")
+    .style.display = "none";
+
+}
+
+// =======================
+// SAVE POST
+// =======================
+
+function savePost(){
+
+  const password =
+    document.getElementById("password").value;
+
+  const title =
+    document.getElementById("title").value;
+
+  const content =
+    CKEDITOR.instances.content.getData();
+
+  if(password.trim() === ""){
+    alert("Enter password");
+    return;
+  }
+
+  if(title.trim() === ""){
+    alert("Enter title");
+    return;
+  }
+
+  if(content.trim() === ""){
+    alert("Enter content");
+    return;
+  }
+
+  const actionType =
+    editingPostId
+    ? "updatePost"
+    : "addPost";
+
+  fetch(API_URL, {
+
+    method:"POST",
+
+    body:new URLSearchParams({
+
+      action: actionType,
+
+      postId: editingPostId || "",
+
+      password: password,
+
+      title: title,
+
+      content: content
+
+    })
+
+  })
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    document.getElementById("message")
+      .innerHTML = data.message;
+
+    if(data.status === "success"){
+
+      closeModal();
+
+      loadAdminPosts();
+
+    }
+
+  });
+
+}
+
+// =======================
+// EDIT POST
+// =======================
+
+function editPost(id){
+
+  fetch(
+    API_URL +
+    "?action=getPostById&postId=" + id
+  )
+
+  .then(res => res.json())
+
+  .then(post => {
+
+    editingPostId = id;
+
+    document.getElementById("modalTitle")
+      .innerText = "Edit Post";
+
+    document.getElementById("title").value =
+      post.title;
+
+    CKEDITOR.instances.content
+      .setData(post.content);
+
+    document.getElementById("postModal")
+      .style.display = "flex";
+
+  });
+
+}
+
+// =======================
+// DELETE POST
+// =======================
+
+function deletePost(id){
+
+  const password =
+    document.getElementById("password").value;
+
+  if(password.trim() === ""){
+    alert("Enter password");
+    return;
+  }
+
+  if(!confirm("Delete this post?")){
+    return;
+  }
+
+  fetch(API_URL, {
+
+    method:"POST",
+
+    body:new URLSearchParams({
+
+      action:"deletePost",
+
+      postId:id,
+
+      password:password
+
+    })
+
+  })
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    alert(data.message);
+
+    loadAdminPosts();
+
+  });
+
+}
+
+// =======================
+// CKEDITOR
+// =======================
+
+CKEDITOR.replace('content', {
+  height:300
+});
+
+// =======================
+// LOAD POSTS
+// =======================
+
+window.onload = function(){
+
+  loadAdminPosts();
+
+};
+
+</script>
+
+</body>
+</html>
