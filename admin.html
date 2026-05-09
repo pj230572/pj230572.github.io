@@ -256,7 +256,42 @@ function editPost(id){
   });
 
 }
+function deletePost(id){
 
+  const password =
+    document.getElementById("password").value;
+
+  if(!confirm("Delete this post?")){
+    return;
+  }
+
+  fetch(API_URL, {
+
+    method:"POST",
+
+    body:new URLSearchParams({
+
+      action:"deletePost",
+
+      postId:id,
+
+      password:password
+
+    })
+
+  })
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    alert(data.message);
+
+    loadAdminPosts();
+
+  });
+
+}
 
 
 
