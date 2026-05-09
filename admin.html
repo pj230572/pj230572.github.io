@@ -120,25 +120,26 @@ function publishPost(){
 
   fetch(API_URL, {
 
-    method:"POST",
-    body:new URLSearchParams({
+  method:"POST",
 
-      action: editingPostId
-        ? "updatePost"
-        : "addPost",
+  body:new URLSearchParams({
 
-      postId: editingPostId,
+    action: editingPostId
+      ? "updatePost"
+      : "addPost",
 
-      password: password,
+    postId: editingPostId,
 
-      title: title,
+    password: password,
 
-      content: content
+    title: title,
 
-    })
+    content: content
 
   })
 
+})
+    
   .then(res => res.json())
 
   .then(data => {
@@ -235,8 +236,6 @@ function loadAdminPosts(){
   });
 
 }
-
-let editingPostId = null;
 
 function editPost(id){
 
