@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Post</title>
+
+<style>
+body {
+  font-family: Arial;
+  margin: 0;
+  background: #f5f5f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: auto;
+  background: #fff;
+  padding: 20px;
+}
+
+h1 {
+  margin-bottom: 5px;
+}
+
+.date {
+  color: gray;
+  font-size: 14px;
+}
+
+/* Comments */
+textarea {
+  width: 100%;
+  height: 80px;
+  margin-top: 10px;
+}
+
+input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 10px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px;
+  width: 100%;
+  background: #007bff;
+  color: #fff;
+  border: none;
+}
+#loader{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:50px;
+}
+
+.spinner{
+  width:50px;
+  height:50px;
+  border:5px solid #ddd;
+  border-top:5px solid #007bff;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+
+@keyframes spin{
+  100%{
+    transform:rotate(360deg);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<div id="loader">
+  <div class="spinner"></div>
+</div>
+
+  <h1 id="title"></h1>
+  <p class="date" id="date"></p>
+  <p id="content"></p>
+
+  <br />
+
+  <div id="comments-section">
+
+  <h3>Comments:</h3>
+
+  <div id="comments"></div>
+
+  <input id="name" placeholder="Your name">
+
+  <textarea id="comment" placeholder="Write comment"></textarea>
+
+  <button onclick="submitComment()">
+    Post Comment
+  </button>
+
+</div>
+</div>
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
+
+// Get ID from URL
+function getPostId() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("id");
+}
+
+const postId = getPostId();
+
+// Load Post
+function loadPost() {
+  fetch(API_URL + "?action=getPostById&postId=" + postId)
+    .then(res => res.json())
+    .then(post => {
+      document.title = post.title;
+
+      document.getElementById("title").innerText = post.title;
+      document.getElementById("date").innerText = post.date;
+      document.getElementById("content").innerHTML = post.content;
+	  document.getElementById("loader").style.display = "none";
+    });
+}
+
+// Load Comments
+function loadComments() {
+  fetch(API_URL + "?action=getComments&postId=" + postId)
+    .then(res => res.json())
+    .then(data => {
+      let container = document.getElementById("comments");
+      container.innerHTML = "";
+
+      data.reverse().forEach(c => {
+        container.innerHTML += `<p><b>${c.name}</b>: ${c.comment}</p>`;
+      });
+    });
+}
+
+// Submit Comment
+function submitComment() {
+  const name = document.getElementById("name").value;
+  const comment = document.getElementById("comment").value;
+
+  fetch(API_URL, {
+    method: "POST",
+    body: new URLSearchParams({
+      action: "addComment",
+      postId: postId,
+      name: name,
+      comment: comment
+    })
+  })
+  .then(res => res.text())
+  .then(() => {
+    loadComments();
+    document.getElementById("comment").value = "";
+  });
+}
+
+// Init
+loadPost();
+loadComments();
+
+</script>
+
+</body>
+</html>
