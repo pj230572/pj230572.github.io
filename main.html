@@ -419,7 +419,7 @@ function editPost(id){
 
   .then(post => {
 
-    editingPostId = id;
+    editingPostId = post.id;
 
     document.getElementById("modalTitle")
       .innerText = "Edit Post";
