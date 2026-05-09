@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+
+<style>
+
+body{
+  font-family: Arial;
+  background:#f5f5f5;
+  margin:0;
+}
+
+.container{
+  max-width:800px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  margin-top:30px;
+  border-radius:10px;
+}
+
+input, textarea{
+  width:100%;
+  padding:10px;
+  margin-top:10px;
+  box-sizing:border-box;
+}
+
+textarea{
+  height:300px;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  margin-top:15px;
+  background:#007bff;
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  font-size:16px;
+}
+
+button:hover{
+  background:#0056b3;
+}
+
+#message{
+  margin-top:15px;
+  font-weight:bold;
+}
+
+</style>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h2>Create Blog Post</h2>
+
+  <input type="password" id="password" placeholder="Admin Password">
+
+  <input type="text" id="title" placeholder="Post Title">
+
+  <textarea id="content" placeholder="Write blog content here..."></textarea>
+
+  <button onclick="publishPost()">
+    Publish Post
+  </button>
+
+  <div id="message"></div>
+
+</div>
+
+<hr>
+
+<h2>All Posts</h2>
+
+<div id="post-list"></div>
+
+
+
+
+<script>
+
+const API_URL = "https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
+
+// =======================
+// CREATE POST
+// =======================
+
+let editingPostId = null;
+
+function publishPost(){
+
+  const password =
+    document.getElementById("password").value;
+
+  const title =
+    document.getElementById("title").value;
+
+  const content =
+    CKEDITOR.instances.content.getData();
+
+  // validation
+  if(title.trim() === ""){
+    alert("Enter title");
+    return;
+  }
+
+  if(content.trim() === ""){
+    alert("Enter content");
+    return;
+  }
+
+  fetch(API_URL, {
+
+    method:"POST",
+
+    body:new URLSearchParams({
+
+      action: editingPostId
+        ? "updatePost"
+        : "addPost",
+
+      postId: editingPostId,
+
+      password: password,
+
+      title: title,
+
+      content: content
+
+    })
+
+  })
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    if(data.status === "success"){
+
+      // CREATE
+      if(!editingPostId){
+
+        document.getElementById("message").innerHTML =
+        `
+        ✅ Post Published<br><br>
+
+        <a href="post.html?id=${data.postId}"
+           target="_blank">
+
+          Open Post
+
+        </a>
+        `;
+
+      }
+
+      // UPDATE
+      else{
+
+        document.getElementById("message").innerHTML =
+        "✅ Post Updated";
+
+      }
+
+      // clear form
+      document.getElementById("title").value = "";
+
+      CKEDITOR.instances.content.setData("");
+
+      editingPostId = null;
+
+      loadAdminPosts();
+
+    }
+
+    else{
+
+      document.getElementById("message").innerHTML =
+        data.message;
+
+    }
+
+  });
+
+}
+
+function loadAdminPosts(){
+
+  fetch(API_URL + "?action=getPosts")
+
+  .then(res => res.json())
+
+  .then(data => {
+
+    let html = "";
+
+    data.reverse().forEach(post => {
+
+      html += `
+
+      <div style="
+        background:#f1f1f1;
+        padding:10px;
+        margin-top:10px;
+      ">
+
+        <b>${post.title}</b>
+
+        <br><br>
+
+        <button onclick="editPost('${post.id}')">
+          Edit
+        </button>
+
+        <button onclick="deletePost('${post.id}')">
+          Delete
+        </button>
+
+      </div>
+
+      `;
+
+    });
+
+    document.getElementById("post-list").innerHTML = html;
+
+  });
+
+}
+
+let editingPostId = null;
+
+function editPost(id){
+
+  fetch(API_URL + "?action=getPostById&postId=" + id)
+
+  .then(res => res.json())
+
+  .then(post => {
+
+    editingPostId = id;
+
+    document.getElementById("title").value = post.title;
+
+    CKEDITOR.instances.content.setData(post.content);
+
+    window.scrollTo(0,0);
+
+  });
+
+}
+
+
+
+
+</script>
+<script>
+
+CKEDITOR.replace('content', {
+  height: 400
+});
+
+</script>
+</body>
+</html>
