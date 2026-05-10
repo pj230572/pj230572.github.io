@@ -203,8 +203,25 @@ Cancel
 
 <script>
 
-const API_URL =
+// =======================
+// API URLS
+// =======================
+
+const GET_API_URL =
 "https://script.google.com/macros/s/AKfycbw8zTI9WW_tj_dv3jpY8RGdO-16uiuYkXjH6NtR3C6Azt60LsaGR01ATjRwvd6kH78Vxg/exec";
+
+const ADD_POST_URL =
+"https://script.google.com/macros/s/AKfycbw0O3M8oB3gj6ZzxTxE84lFSO-pgqL9lB2T6crlQxnyScXdeJ52FEFbVHw_X0XLCucSZg/exec";
+
+const UPDATE_POST_URL =
+"https://script.google.com/macros/s/AKfycbxfnleSwWGXVJYmC2NNfpwn7ywK3ofJNHwgtIVrWU4m3RtIP6uZdsc52wnY7qopRkQPzw/exec";
+
+const DELETE_POST_URL =
+"https://script.google.com/macros/s/AKfycbxX34amcJp90XVY8MPdihyw3Mhimi-nr_xGNB4O8w0ZAUylxu-SxSm2nmlJbK-KMoXuaw/exec";
+
+// =======================
+// GLOBAL
+// =======================
 
 let editingPostId = null;
 
@@ -214,7 +231,7 @@ let editingPostId = null;
 
 function loadAdminPosts(){
 
-  fetch(API_URL + "?action=getPosts")
+  fetch(GET_API_URL + "?action=getPosts")
 
   .then(res => res.json())
 
@@ -233,17 +250,24 @@ function loadAdminPosts(){
         <td>${post.title}</td>
 
         <td class="preview">
+
           ${stripHtml(post.content)
             .substring(0,100)}...
+
         </td>
 
         <td>
+
           ${formatDate(post.date)}
+
         </td>
 
         <td>
 
-          <button onclick="editPost('${post.id}')">
+          <button
+            type="button"
+            onclick="editPost('${post.id}')"
+          >
             Edit
           </button>
 
@@ -252,6 +276,7 @@ function loadAdminPosts(){
         <td>
 
           <button
+            type="button"
             style="background:red"
             onclick="deletePost('${post.id}')"
           >
@@ -360,22 +385,24 @@ function savePost(){
     return;
   }
 
-  const actionType =
-    editingPostId
-    ? "updatePost"
-    : "addPost";
+  // =======================
+  // ADD OR UPDATE
+  // =======================
 
-  fetch(API_URL, {
+  const apiUrl =
+    editingPostId
+    ? UPDATE_POST_URL
+    : ADD_POST_URL;
+
+  fetch(apiUrl, {
 
     method:"POST",
 
     body:new URLSearchParams({
 
-      action: actionType,
+      password: password,
 
       postId: editingPostId || "",
-
-      password: password,
 
       title: title,
 
@@ -389,6 +416,8 @@ function savePost(){
 
   .then(data => {
 
+    console.log(data);
+
     document.getElementById("message")
       .innerHTML = data.message;
 
@@ -398,7 +427,17 @@ function savePost(){
 
       loadAdminPosts();
 
+      editingPostId = null;
+
     }
+
+  })
+
+  .catch(error => {
+
+    console.log(error);
+
+    alert("Save failed");
 
   });
 
@@ -411,7 +450,7 @@ function savePost(){
 function editPost(id){
 
   fetch(
-    API_URL +
+    GET_API_URL +
     "?action=getPostById&postId=" + id
   )
 
@@ -455,17 +494,15 @@ function deletePost(id){
     return;
   }
 
-  fetch(API_URL, {
+  fetch(DELETE_POST_URL, {
 
     method:"POST",
 
     body:new URLSearchParams({
 
-      action:"deletePost",
+      password: password,
 
-      postId:id,
-
-      password:password
+      postId: id
 
     })
 
@@ -478,6 +515,14 @@ function deletePost(id){
     alert(data.message);
 
     loadAdminPosts();
+
+  })
+
+  .catch(error => {
+
+    console.log(error);
+
+    alert("Delete failed");
 
   });
 
@@ -492,7 +537,7 @@ CKEDITOR.replace('content', {
 });
 
 // =======================
-// LOAD POSTS
+// AUTO LOAD POSTS
 // =======================
 
 window.onload = function(){
